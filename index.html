@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flylog</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  input { padding: 10px; font-size: 16px; width: 200px; }
+  button { padding: 10px 20px; font-size: 16px; margin-left: 10px; }
+  #log { margin-top: 20px; }
+  .entry { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h1>Flylog</h1>
+<input type="text" id="flightNumber" placeholder="Indtast flynummer">
+<button onclick="sendFlight()">Gem</button>
+
+<div id="log"></div>
+
+<script>
+const webAppUrl = "https://script.google.com/macros/s/AKfycbyrh0iSLGtQv68sFlQYno-Tb-rSth77y5b0q8ohTAeka2ckMAhchXljuhSkqIvKl76o/exec"; // Indsæt din Google Apps Script Web App URL
+
+function sendFlight() {
+    const flightInput = document.getElementById("flightNumber");
+    const flightNumber = flightInput.value.trim();
+    if (!flightNumber) {
+        alert("Indtast et flynummer!");
+        return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString('da-DK', { hour12: false });
+
+    fetch(webAppUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flightNumber, timestamp })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Sendt:", data);
+        addToLog(flightNumber, timestamp);
+        flightInput.value = "";
+    })
+    .catch(err => console.error("Fejl:", err));
+}
+
+function addToLog(flightNumber, timestamp) {
+    const logDiv = document.getElementById("log");
+    const entryDiv = document.createElement("div");
+    entryDiv.className = "entry";
+    entryDiv.textContent = `${flightNumber} - ${timestamp}`;
+    logDiv.prepend(entryDiv);
+}
+</script>
+
+</body>
+</html>
