@@ -3,46 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flylog</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Flylog">
+  <title>Fly Info</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f2f5; }
-    h1 { text-align: center; color: #333; }
-    input { width: 100%; padding: 15px; font-size: 18px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; }
-    button { width: 100%; padding: 15px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    #log { margin-top: 20px; }
-    .entry { padding: 10px; background: white; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #E0E0E0;
+      -webkit-text-size-adjust: 100%;
+    }
+    body { display: flex; flex-direction: column; }
+    h1 { text-align: center; padding: 15px 0; margin: 0; font-size: 24px; }
+    .container { flex: 1; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
+    input {
+      width: 100%; padding: 20px; font-size: 20px; margin-bottom: 12px;
+      border-radius: 12px; border: 1px solid #444;
+      background-color: #1E1E1E; color: #fff; min-height: 55px;
+    }
+    button {
+      width: 100%; padding: 20px; font-size: 20px; margin-bottom: 12px;
+      border-radius: 12px; border: none; cursor: pointer;
+      background: #BB86FC; color: #121212; min-height: 55px;
+    }
+    button:hover { background: #985EFF; }
+    #log { flex: 1; overflow-y: auto; margin-top: 10px; }
+    .entry { padding: 12px; background: #1E1E1E; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); word-break: break-word; }
   </style>
 </head>
 <body>
   <h1>Flylog</h1>
-  <input type="text" id="flightNumber" placeholder="Indtast flynummer">
-  <button onclick="saveFlight()">Gem</button>
-
-  <div id="log"></div>
+  <div class="container">
+    <input type="text" id="flightNumber" placeholder="Indtast flynummer">
+    <input type="text" id="runway" placeholder="Indtast runway">
+    <button onclick="saveFlight()">Gem</button>
+    <div id="log"></div>
+  </div>
 
   <script>
-    function saveFlight() {
-      const flightInput = document.getElementById("flightNumber");
-      const flightNumber = flightInput.value.trim();
-      if (!flightNumber) {
-        alert("Indtast et flynummer!");
-        return;
-      }
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsCfFkzyXc-RCR6fzwsZ5629hAndBehvvv_s2y1mRDsQdNIfi2aT17cgqIOzB3vs9L/exec"; // Sæt din Apps Script URL her
 
-      google.script.run.withSuccessHandler(function(response){
-        addToLog(flightNumber);
-        flightInput.value = "";
-      }).addFlight(flightNumber);
+    window.onload = function() {
+      fetch(SCRIPT_URL + "?action=getFlights")
+        .then(res => res.json())
+        .then(flights => {
+          flights.forEach(f => addToLog(f.flightNumber, f.runway, f.timestamp));
+        });
+    };
+
+    function saveFlight() {
+      const flightNumber = document.getElementById("flightNumber").value.trim().toUpperCase();
+      const runway = document.getElementById("runway").value.trim().toUpperCase();
+
+      if(!flightNumber || !runway) { alert("Udfyld både flynummer og runway!"); return; }
+
+      fetch(SCRIPT_URL + `?action=addFlight&flightNumber=${flightNumber}&runway=${runway}`)
+        .then(res => res.text())
+        .then(() => {
+          const timestamp = new Date().toLocaleTimeString('da-DK', { hour12: false });
+          addToLog(flightNumber, runway, timestamp);
+          document.getElementById("flightNumber").value = "";
+          document.getElementById("runway").value = "";
+        });
     }
 
-    function addToLog(flightNumber) {
+    function addToLog(flightNumber, runway, timestamp) {
       const logDiv = document.getElementById("log");
-      const timestamp = new Date().toLocaleTimeString('da-DK', { hour12: false });
-      const entryDiv = document.createElement("div");
-      entryDiv.className = "entry";
-      entryDiv.textContent = `${flightNumber} - ${timestamp}`;
-      logDiv.prepend(entryDiv);
+      const entry = document.createElement("div");
+      entry.className = "entry";
+      entry.textContent = `${flightNumber} - Runway: ${runway} - ${timestamp}`;
+      logDiv.prepend(entry);
     }
   </script>
 </body>
